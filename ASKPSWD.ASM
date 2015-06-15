@@ -264,32 +264,27 @@ read_done_skip:
 hash:
     ret
 
-; Destructive fixed time compare. There may be a better way of doing this.
-; But, to prevent side channel timing attacks, this must always take the 
-; exact same amount of time to process.
+; Fixed time compare. There may be a better way of doing this.
+; But, to prevent side channel timing attacks, this must always 
+; take the exact same amount of time to process.
 compare:
-    mov     SI, pswdhash
-    mov     DI, pswdinput
-    mov     CX, pswdinputend - pswdinput
-    pushy   DI, CX
-compare_loop_xor:
-    mov     AL, [SI]
-    mov     AH, [DI]
-    xor     AH, AL
-    mov     [DI], AH
-    inc     SI
-    inc     DI
-    loop    compare_loop_xor
-    poppy   CX, DI
-    xor     AL, AL
-compare_loop_or:
-    mov     AH, [DI]
-    or      AL, AH
-    inc     DI
-    loop    compare_loop_or
-    ; any bit not zero results in AX being non-zero on return
-    ret
-    
+	mov		SI, pswdhash
+	mov		DI, pswdinput
+	mov		CX, pswdinputend - pswdinput
+	xor		AX, AX
+compare_loop:
+	mov		DL, [SI]
+	mov		DH, [DI]
+	not 	DL
+	or		DH, DL
+	not		DH
+	or		AL, DH
+	inc		SI
+	inc		DI
+	loop	compare_loop
+	; any bit not zero results in AX being non-zero on return
+	ret
+   
 ; basically, it waits for system timer tick to change a given number
 ; of times.
 wait_a_little:
