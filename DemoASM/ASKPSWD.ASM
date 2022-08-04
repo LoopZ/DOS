@@ -11,20 +11,20 @@
 ;   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 ;   See the License for the specific language governing permissions and
 ;   limitations under the License.
-   
+
 ; NASM for DOS
 
 ; A little more secure way of validating a user password.
 
 ; This is only a demonstration of several security techniques for password
-; verification. it should not be used as-is in a real world environment. 
+; verification. it should not be used as-is in a real world environment.
 ; Several things this program does are extremely bad ideas for a secure
-; system. That includes, but is not limited to, providing the program with 
-; the username and password at runtime from the command-line. No actual 
+; system. That includes, but is not limited to, providing the program with
+; the username and password at runtime from the command-line. No actual
 ; password hashing. Just to mention a few things. However, it does do
-; several things that would be required for a secure password system. 
-; Things like, fixed execution loop processing to prevent side-channel 
-; attacks. Wiping user data to prevent leakage when program exits. 
+; several things that would be required for a secure password system.
+; Things like, fixed execution loop processing to prevent side-channel
+; attacks. Wiping user data to prevent leakage when program exits.
 ; Delayed prompting and maximum number attempts. etc.
 
 use16       ; 16-bit 286 assembly code
@@ -32,32 +32,32 @@ use16       ; 16-bit 286 assembly code
 ; some macros
 
 ; Push multiple registers (ex. pushy AX, BX, CX)
-%imacro  pushy 1-* 
-  %rep  %0 
-        push    %1 
-  %rotate 1 
-  %endrep 
+%imacro  pushy 1-*
+  %rep  %0
+        push    %1
+  %rotate 1
+  %endrep
 %endmacro
 
 ; Pop multiple registers (ex. poppy CX, BX, AX)
-%imacro  poppy 1-* 
-  %rep  %0 
-        pop    %1 
-  %rotate 1 
-  %endrep 
+%imacro  poppy 1-*
+  %rep  %0
+        pop    %1
+  %rotate 1
+  %endrep
 %endmacro
 
 ; return if zero flag set
-%imacro retz 0 
+%imacro retz 0
         jnz %%notzero
         ret
-    %%notzero:  
+    %%notzero:
 %endmacro
 
 ; beginning of program
 org 100h
 
-global  _start                          
+global  _start
 
 section .code
 
@@ -69,7 +69,7 @@ _start:
     mov     SI, 0081h
     mov     CX, 00FFh - 0081h
 parse:
-    lodsb   
+    lodsb
     cmp     al, 0dh
     je      parse_done
     cmp     al, 20h
@@ -80,8 +80,8 @@ parse:
     je      way_too_big
     dec     DX
     stosb
-    loop  parse 
-    
+    loop  parse
+
 parse_done:
     ; wipe command line parameters
     cld
@@ -94,39 +94,39 @@ parse_cleanup_loop:
 
     ; check BX for count of params. username & password. must be 2.
     cmp     BX, 2
-    jne     parse_error     
+    jne     parse_error
     jmp     welcome
-    
+
 parse_option_done:
     inc     BX
     ; Load DX with max length allowed for parameter. At present all are
     ; the same at 64 bytes (plus a required null terminator)
-    mov     DX, pswdinputend - pswdinput - 1 
+    mov     DX, pswdinputend - pswdinput - 1
     mov     DI, username
     cmp     BX, 1
     je      parse
     mov     DI, pswdhash
     cmp     BX, 2
     je      parse
-        
+
 parse_error:
     mov     SI, msg_error_parse
     call    write
     jmp     exit_error
-    
+
 way_too_big:
     cmp     bx, 1
     jg      way_too_big_pswd
     mov     SI, msg_error_too_big_user
     call    write
     jmp     exit_error
-    
+
 way_too_big_pswd:
     mov     SI, msg_error_too_big_pswd
     call    write
     jmp     exit_error
-    
-    
+
+
 ; print welcome message and prompt for password
 welcome:
     mov     SI, greetings
@@ -135,9 +135,9 @@ welcome:
     call    write
     mov     SI, prompt_first
     call    write
-    
+
     mov     AL, [max_tries]
-    
+
 ; Main password query loop
 input_loop:
     push    AX
@@ -150,7 +150,7 @@ input_loop:
     cmp     AX, 0
     je      input_valid
     call    wait_a_little
-    pop     AX  
+    pop     AX
     dec     AL
     cmp     AL, 0
     je      password_failure
@@ -159,12 +159,12 @@ input_loop:
     call    write
     pop     AX
     jmp     input_loop
-    
+
 ; received matching password, need to pop ax
 input_valid:
     pop     AX
     jmp     password_success
-    
+
 ; a timeout occurred. too long between keypresses
 password_timeout:
     mov     SI, msg_error_timeout
@@ -176,7 +176,7 @@ password_failure:
     mov     SI, msg_error_failed
     call    write
     jmp     exit_error
-    
+
 ; print good password message
 password_success:
     mov     SI, msg_success
@@ -207,7 +207,7 @@ read_clear:
     stosb
     loop    read_clear
     pop     DI
-    
+
     pushy   ES, SI
     les     BX, [timer]
 
@@ -219,7 +219,7 @@ read_char_loop:
     cmp     AX, DX
     je      read_char_get
     dec     CX
-    cmp     CX, 0   
+    cmp     CX, 0
     je      read_char_timout
     mov     AX, DX
 read_char_get:
@@ -232,7 +232,7 @@ read_char_get:
     jne     read_char_simple
     int     21h
     jmp     read_char_none
-    
+
 read_char_simple:
     cmp     AL, 0dh
     je      read_done
@@ -240,7 +240,7 @@ read_char_simple:
     jge     read_char_ignore
     mov     [DI], AL
     INC     DI
-    
+
 read_char_ignore:
     ; if the next two instructions are uncommented password will
     ; be echoed to console. REALLY BAD IDEA!
@@ -249,11 +249,11 @@ read_char_ignore:
 
     poppy   DX, AX
     jmp     read_char
-    
+
 read_char_none:
     poppy   DX, AX
     jmp     read_char_loop
-    
+
 read_char_timout:
     poppy   SI, ES
     mov     SI, crlf
@@ -279,7 +279,7 @@ hash:
     ret
 
 ; Fixed time compare. There may be a better way of doing this.
-; But, to prevent side channel timing attacks, this must always 
+; But, to prevent side channel timing attacks, this must always
 ; take the exact same amount of time to process.
 compare:
 	mov		SI, pswdhash
@@ -290,7 +290,7 @@ compare_loop:
 	mov		DL, [SI]
 	mov		DH, [DI]
 	not 	DL
-	or		DH, DL
+	xor		DH, DL
 	not		DH
 	or		AL, DH
 	inc		SI
@@ -298,7 +298,7 @@ compare_loop:
 	loop	compare_loop
 	; any bit not zero results in AX being non-zero on return
 	ret
-   
+
 ; basically, it waits for system timer tick to change a given number
 ; of times.
 wait_a_little:
@@ -309,7 +309,7 @@ wait_a_little_read:
     mov     AX, [ES:BX]             ; get current ticks into AX
 wait_a_little_wait:
     mov     DX, [ES:BX]             ; get current ticks into DX
-    cmp     AX, DX                  
+    cmp     AX, DX
     je      wait_a_little_wait      ; if AX = DX get DX again
     loop    wait_a_little_read      ; dec CX, then get AX & DX again
     poppy   SI, ES
@@ -319,7 +319,7 @@ wait_a_little_wait:
 exit_error:
     mov     AL, 1
     jmp     exit_cleanup
-    
+
 ; Exit to dos, with no error code
 exit_good:
     mov     AL, 0
@@ -336,39 +336,39 @@ exit_cleanup_loop:
     stosb
     loop    exit_cleanup_loop
     pop     AX
-    mov     AH, 4Ch  
+    mov     AH, 4Ch
     int     21h
 
 section .data
 
 ; number of times to ask for password before failure
-max_tries: 
+max_tries:
     DB 3
-    
+
 ; number of 55ms ticks to wait when password is wrong
-delayticks: 
+delayticks:
     DW 36   ; about 2 seconds
-                
+
 ; number of 55ms timer ticks to wait between keystrokes before timing out.
 timeout:
-    DW 91   ; about 5 seconds           
-    
+    DW 91   ; about 5 seconds
+
 ; pointer to system timer tick count
 timer:
     DW  006Ch,0040h
-    
+
 ; error messages and other asciiz strings
 msg_error_parse:
     DB "Invalid number of command line parameters.",13,10
     DB "Please enter ASKPSWD username password",13,10
     DB "(spaces are not permitted)",13,10,0
-    
+
 msg_error_too_big_user:
     DB "Sorry, but that username is too long.",13,10,0
-    
+
 msg_error_too_big_pswd:
     DB "Sorry, but that password is too large.",13,10,0
-    
+
 msg_error_timeout:
     DB  "Sorry, but you session has timed out.",13,10,0
 
@@ -386,7 +386,7 @@ prompt_first:
     DB ", please enter your password? ",0
 prompt_retry:
     DB  "Incorrect. Please try again? ", 0
-    
+
 ; user data
 startofdata:
 username:
